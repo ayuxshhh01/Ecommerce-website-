@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SS ADMIN — Staff Only</title>
+<!-- No indexing by search engines -->
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#040406;--surface:#0a0a10;--card:#0e0e16;--accent:#E8FF3A;--accent2:#FF3A6E;--accent3:#3AFFD4;--accent4:#a78bfa;--text:#F0F0F5;--muted:#555566;--border:#181826;--inp:#08080e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;cursor:none}
+body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");pointer-events:none;z-index:9990}
+
+/* CURSOR */
+#cur{width:10px;height:10px;background:var(--accent);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:99999;mix-blend-mode:difference}
+#cur-ring{width:40px;height:40px;border:1.5px solid rgba(232,255,58,.5);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:99998;transition:none}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.login-box{background:var(--surface);border:1px solid var(--border);padding:52px;width:400px;box-shadow:0 0 80px rgba(232,255,58,.06)}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.login-sub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:36px}
+.login-err{background:rgba(255,58,110,.1);border:1px solid rgba(255,58,110,.3);color:var(--accent2);padding:10px 14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;margin-bottom:14px;display:none}
+.login-err.show{display:block}
+.fg{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.flbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.finput{background:var(--inp);border:1px solid var(--border);color:var(--text);padding:13px 16px;font-family:'Syne',sans-serif;font-size:14px;outline:none;transition:all .2s;width:100%}
+.finput:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(232,255,58,.08)}
+.finput::placeholder{color:var(--muted)}
+.bp{background:var(--accent);color:#000;padding:14px 32px;font-family:'Syne',sans-serif;font-weight:900;font-size:13px;letter-spacing:3px;text-transform:uppercase;border:none;cursor:none;transition:all .3s;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));width:100%;position:relative;overflow:hidden}
+.bp::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent3),var(--accent));opacity:0;transition:opacity .3s}
+.bp:hover::after{opacity:1}
+.bp:hover{box-shadow:0 0 32px rgba(232,255,58,.25);transform:translateY(-2px)}
+.bp span{position:relative;z-index:1}
+.admin-creds{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-top:18px;text-align:center;letter-spacing:1px}
+
+/* ── ADMIN SHELL ── */
+#admin-shell{display:none}
+#admin-shell.active{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* SIDEBAR */
+.sb{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-hdr{padding:28px 24px;border-bottom:1px solid var(--border)}
+.sb-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:block}
+.sb-sub{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sb-admin-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,58,110,.12);border:1px solid rgba(255,58,110,.2);color:var(--accent2);padding:4px 10px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-top:10px;border-radius:20px}
+.sb-nav{padding:16px 12px;flex:1}
+.sb-section{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;padding:10px 12px 6px;margin-top:10px}
+.sbnav{display:flex;align-items:center;gap:12px;padding:12px 14px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:2px;cursor:none;transition:all .2s;border-radius:6px;text-transform:uppercase;position:relative;margin-bottom:2px}
+.sbnav:hover,.sbnav.active{color:var(--accent);background:rgba(232,255,58,.06)}
+.sbnav.active::before{content:'';position:absolute;left:0;top:20%;height:60%;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.sbnav-icon{font-size:15px;flex-shrink:0}
+.sbnav-badge{margin-left:auto;background:var(--accent2);color:#fff;font-family:'Space Mono',monospace;font-size:9px;padding:2px 7px;border-radius:20px;font-weight:700}
+.sb-footer{padding:18px 24px;border-top:1px solid var(--border)}
+.logout-btn{width:100%;background:transparent;border:1px solid rgba(255,58,110,.2);color:var(--accent2);padding:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;cursor:none;transition:all .2s;text-transform:uppercase}
+.logout-btn:hover{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+
+/* MAIN */
+.main{padding:40px;overflow-y:auto;background:var(--bg)}
+
+/* TABS */
+.tab{display:none}
+.tab.active{display:block}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:40px;flex-wrap:wrap;gap:16px}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;line-height:1}
+.topbar-actions{display:flex;gap:10px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+.scard{background:var(--card);border:1px solid var(--border);padding:22px;position:relative;overflow:hidden;transition:all .3s}
+.scard:hover{border-color:rgba(232,255,58,.18);transform:translateY(-2px)}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.scard:nth-child(1)::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.scard:nth-child(2)::before{background:linear-gradient(90deg,var(--accent2),transparent)}
+.scard:nth-child(3)::before{background:linear-gradient(90deg,var(--accent3),transparent)}
+.scard:nth-child(4)::before{background:linear-gradient(90deg,var(--accent4),transparent)}
+.scard-bg{position:absolute;right:-5px;bottom:-5px;font-size:72px;opacity:.04;user-select:none}
+.slbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.sval{font-family:'Bebas Neue',sans-serif;font-size:50px;letter-spacing:2px;line-height:1}
+.schg{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent3);margin-top:6px;letter-spacing:1px}
+
+/* PANEL */
+.panel{background:var(--card);border:1px solid var(--border);padding:28px;margin-bottom:24px}
+.panel-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--border);color:var(--accent);display:flex;align-items:center;gap:10px}
+.panel-title::before{content:'';width:3px;height:18px;background:var(--accent);flex-shrink:0}
+
+/* TABLE */
+.atable{width:100%;border-collapse:collapse}
+.atable th{text-align:left;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.018);white-space:nowrap}
+.atable td{padding:14px;border-bottom:1px solid var(--border);font-size:13px;transition:background .15s;vertical-align:middle}
+.atable tr:hover td{background:rgba(232,255,58,.018)}
+.atable tr:last-child td{border-bottom:none}
+.tname{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px}
+.tprice{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px}
+.tcat{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.cswatch{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.1);display:inline-block;vertical-align:middle}
+.act-btns{display:flex;gap:6px;flex-wrap:wrap}
+.abtn{padding:5px 12px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;cursor:none;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s;text-transform:uppercase;white-space:nowrap}
+.abtn:hover{border-color:var(--accent);color:var(--accent)}
+.abtn.del:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* STATUS PILLS */
+.sp{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;border-radius:20px;white-space:nowrap}
+.sp::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sp-new{background:rgba(232,255,58,.12);color:var(--accent);border:1px solid rgba(232,255,58,.22)}
+.sp-new::before{background:var(--accent)}
+.sp-arriving{background:rgba(58,255,212,.12);color:var(--accent3);border:1px solid rgba(58,255,212,.22)}
+.sp-arriving::before{background:var(--accent3)}
+.sp-available{background:rgba(167,139,250,.12);color:var(--accent4);border:1px solid rgba(167,139,250,.22)}
+.sp-available::before{background:var(--accent4)}
+.sp-soldout{background:rgba(80,80,100,.15);color:var(--muted);border:1px solid var(--border)}
+.sp-soldout::before{background:var(--muted)}
+.sp-confirmed{background:rgba(58,255,212,.12);color:var(--accent3);border:1px solid rgba(58,255,212,.22)}
+.sp-confirmed::before{background:var(--accent3)}
+.sp-shipped{background:rgba(232,255,58,.12);color:var(--accent);border:1px solid rgba(232,255,58,.22)}
+.sp-shipped::before{background:var(--accent)}
+.sp-delivered{background:rgba(167,139,250,.12);color:var(--accent4);border:1px solid rgba(167,139,250,.22)}
+.sp-delivered::before{background:var(--accent4)}
+
+/* FORM */
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-actions{display:flex;gap:10px;margin-top:22px;padding-top:22px;border-top:1px solid var(--border)}
+.cbrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.cblbl{display:flex;align-items:center;gap:7px;font-size:12px;cursor:none;color:var(--muted);transition:color .2s}
+.cblbl:hover{color:var(--accent)}
+.cblbl input{accent-color:var(--accent)}
+.fsel{background:var(--inp);border:1px solid var(--border);color:var(--text);padding:11px 14px;font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:all .2s;width:100%}
+.fsel:focus{border-color:var(--accent)}
+.fsel option{background:var(--inp)}
+.bo-btn{background:transparent;color:var(--text);padding:12px 28px;font-family:'Syne',sans-serif;font-weight:900;font-size:12px;letter-spacing:3px;text-transform:uppercase;border:1px solid rgba(255,255,255,.15);cursor:none;transition:all .3s;position:relative;overflow:hidden}
+.bo-btn::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,.05);transform:translateX(-101%);transition:transform .3s}
+.bo-btn:hover::before{transform:translateX(0)}
+
+/* EDIT MODAL */
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:8500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(12px)}
+.edit-modal-overlay.open{display:flex}
+.edit-modal{background:var(--surface);border:1px solid var(--border);padding:0;width:500px;max-height:90vh;overflow-y:auto;animation:em .35s ease both;box-shadow:0 0 80px rgba(232,255,58,.06)}
+.edit-modal::-webkit-scrollbar{width:3px}
+.edit-modal::-webkit-scrollbar-thumb{background:var(--border)}
+@keyframes em{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:none}}
+.em-hdr{padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.em-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px}
+.em-close{background:transparent;border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:50%;cursor:none;font-size:16px;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.em-close:hover{background:var(--accent2);border-color:var(--accent2);color:#fff;transform:rotate(90deg)}
+.em-body{padding:24px 28px}
+
+/* ORDER STATUS SELECTOR */
+.order-status-sel{background:var(--inp);border:1px solid var(--border);color:var(--text);padding:7px 12px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;outline:none;transition:border-color .2s}
+.order-status-sel:focus{border-color:var(--accent)}
+.order-status-sel option{background:var(--inp)}
+
+/* TOAST */
+#toast{position:fixed;bottom:26px;right:26px;background:var(--accent);color:#000;padding:13px 24px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;z-index:99999;transform:translateY(120px) scale(.92);opacity:0;transition:all .4s cubic-bezier(.23,1,.32,1);clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));pointer-events:none}
+#toast.show{transform:translateY(0) scale(1);opacity:1}
+#toast.err{background:var(--accent2)}
+
+/* SEARCH BAR */
+.search-bar{background:var(--card);border:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:10px 16px;margin-bottom:20px}
+.search-bar input{background:transparent;border:none;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;outline:none;flex:1}
+.search-bar input::placeholder{color:var(--muted)}
+
+/* COLOR PREVIEW */
+.color-preview{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.1);margin-top:6px}
+
+/* CHART BAR */
+.chart-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;height:80px;align-items:flex-end;margin:16px 0}
+.chart-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar{background:linear-gradient(to top,var(--accent),rgba(232,255,58,.3));border-radius:2px 2px 0 0;width:100%;min-height:4px;transition:height .6s ease}
+.chart-lbl{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  #admin-shell{grid-template-columns:1fr}
+  .sb{position:fixed;left:-280px;z-index:100;transition:left .3s;height:100vh}
+  .sb.open{left:0}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .fg2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div id="toast"></div>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">SATORI STATION</div>
+    <div class="login-sub">Admin Panel — Staff Only</div>
+    <div class="login-err" id="l-err"></div>
+    <div class="fg"><label class="flbl">Admin Email</label><input class="finput" id="a-email" type="email" placeholder="admin@satoristation.in" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
+    <div class="fg"><label class="flbl">Password</label><input class="finput" id="a-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()"></div>
+    <button class="bp" onclick="doAdminLogin()"><span>SIGN IN →</span></button>
+    <div class="admin-creds">Demo credentials: admin@satoristation.in / admin123</div>
+  </div>
+</div>
+
+<!-- ── EDIT PRODUCT MODAL ── -->
+<div class="edit-modal-overlay" id="edit-modal" onclick="if(event.target===this)closeEdit()">
+  <div class="edit-modal">
+    <div class="em-hdr"><span class="em-title" id="em-title">EDIT PRODUCT</span><button class="em-close" onclick="closeEdit()">✕</button></div>
+    <div class="em-body">
+      <div class="fg" style="margin-bottom:12px"><label class="flbl">Product Name *</label><input class="finput" id="e-name" placeholder="e.g. Void Oversized Tee"></div>
+      <div class="fg2" style="margin-bottom:12px">
+        <div class="fg"><label class="flbl">Price (₹) *</label><input class="finput" id="e-price" type="number" placeholder="1499"></div>
+        <div class="fg"><label class="flbl">Category</label><select class="fsel" id="e-cat"><option value="tshirt">T-Shirt</option><option value="hoodie">Hoodie</option><option value="cap">Cap</option><option value="accessories">Accessories</option></select></div>
+      </div>
+      <div class="fg2" style="margin-bottom:12px">
+        <div class="fg"><label class="flbl">Status</label><select class="fsel" id="e-status"><option value="new">New Arrival</option><option value="arriving">Arriving Soon</option><option value="available">Available</option><option value="soldout">Sold Out</option></select></div>
+        <div class="fg"><label class="flbl">Stock Qty</label><input class="finput" id="e-stock" type="number" placeholder="100"></div>
+      </div>
+      <div class="fg2" style="margin-bottom:12px">
+        <div class="fg"><label class="flbl">Shirt Color (Hex)</label><input class="finput" id="e-color" placeholder="#E8FF3A" oninput="document.getElementById('e-color-prev').style.background=this.value"><div class="color-preview" id="e-color-prev" style="background:#E8FF3A"></div></div>
+        <div class="fg"><label class="flbl">Glow Color (Hex)</label><input class="finput" id="e-glow" placeholder="#E8FF3A"></div>
+      </div>
+      <div class="fg" style="margin-bottom:12px"><label class="flbl">Description</label><textarea class="finput" id="e-desc" placeholder="Describe this drop..." style="min-height:70px;resize:vertical"></textarea></div>
+      <div class="fg" style="margin-bottom:0"><label class="flbl">Available Sizes</label>
+        <div class="cbrow">
+          <label class="cblbl"><input type="checkbox" name="esz" value="XS"> XS</label>
+          <label class="cblbl"><input type="checkbox" name="esz" value="S"> S</label>
+          <label class="cblbl"><input type="checkbox" name="esz" value="M"> M</label>
+          <label class="cblbl"><input type="checkbox" name="esz" value="L"> L</label>
+          <label class="cblbl"><input type="checkbox" name="esz" value="XL"> XL</label>
+          <label class="cblbl"><input type="checkbox" name="esz" value="XXL"> XXL</label>
+          <label class="cblbl"><input type="checkbox" name="esz" value="One Size"> One Size</label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="bp" onclick="saveProduct()"><span id="save-btn-txt">SAVE CHANGES</span></button>
+        <button class="bo-btn" onclick="closeEdit()">CANCEL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN SHELL ── -->
+<div id="admin-shell">
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="sb-hdr">
+      <span class="sb-logo">SATORI STATION</span>
+      <div class="sb-sub">Admin Dashboard</div>
+      <div class="sb-admin-badge">⚡ ADMIN</div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">MAIN</div>
+      <div class="sbnav active" onclick="goTab('dashboard',this)"><span class="sbnav-icon">⚡</span>Dashboard</div>
+      <div class="sbnav" onclick="goTab('orders',this)"><span class="sbnav-icon">📦</span>Orders<span class="sbnav-badge" id="orders-badge">0</span></div>
+
+      <div class="sb-section">CATALOGUE</div>
+      <div class="sbnav" onclick="goTab('products',this)"><span class="sbnav-icon">👕</span>Products</div>
+      <div class="sbnav" onclick="goTab('add-product',this)"><span class="sbnav-icon">➕</span>Add Product</div>
+      <div class="sbnav" onclick="goTab('arrivals',this)"><span class="sbnav-icon">🚀</span>Arrivals</div>
+
+      <div class="sb-section">CUSTOMERS</div>
+      <div class="sbnav" onclick="goTab('customers',this)"><span class="sbnav-icon">👥</span>Customers</div>
+
+      <div class="sb-section">SETTINGS</div>
+      <div class="sbnav" onclick="goTab('settings',this)"><span class="sbnav-icon">⚙</span>Settings</div>
+    </nav>
+    <div class="sb-footer">
+      <button class="logout-btn" onclick="adminLogout()">🚪 SIGN OUT</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="tab active" id="tab-dashboard">
+      <div class="topbar">
+        <div>
+          <div class="page-title">DASHBOARD</div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:4px" id="dash-date"></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="bp" onclick="goTab('add-product',null)" style="padding:11px 24px"><span>+ NEW DROP</span></button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="scard"><div class="scard-bg">👕</div><div class="slbl">Total Products</div><div class="sval" id="d-products">0</div><div class="schg">In catalogue</div></div>
+        <div class="scard"><div class="scard-bg">📦</div><div class="slbl">Total Orders</div><div class="sval" id="d-orders">0</div><div class="schg">↑ All time</div></div>
+        <div class="scard"><div class="scard-bg">💰</div><div class="slbl">Revenue</div><div class="sval" id="d-revenue">₹0</div><div class="schg">↑ All orders</div></div>
+        <div class="scard"><div class="scard-bg">🔥</div><div class="slbl">New Arrivals</div><div class="sval" id="d-new">0</div><div class="schg">Active drops</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px">
+        <div class="panel">
+          <div class="panel-title">RECENT ORDERS</div>
+          <table class="atable"><thead><tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead><tbody id="dash-orders"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="panel-title">SALES THIS WEEK</div>
+          <div class="chart-wrap" id="week-chart"></div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px">DAILY ORDERS (SIMULATED)</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">LOW STOCK ALERT</div>
+        <table class="atable"><thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Status</th><th>Action</th></tr></thead><tbody id="low-stock"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ── ORDERS ── -->
+    <div class="tab" id="tab-orders">
+      <div class="topbar">
+        <div class="page-title">ORDERS</div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px" id="orders-summary-text"></div>
+      </div>
+      <div class="search-bar"><span style="color:var(--muted)">🔍</span><input placeholder="Search by order ID or customer..." oninput="searchOrders(this.value)"></div>
+      <div class="panel" style="padding:0">
+        <table class="atable">
+          <thead><tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PRODUCTS ── -->
+    <div class="tab" id="tab-products">
+      <div class="topbar">
+        <div class="page-title">PRODUCTS</div>
+        <button class="bp" onclick="goTab('add-product',null)" style="padding:11px 24px"><span>+ ADD DROP</span></button>
+      </div>
+      <div class="search-bar"><span style="color:var(--muted)">🔍</span><input placeholder="Search products..." oninput="searchProducts(this.value)"></div>
+      <div class="panel" style="padding:0">
+        <table class="atable">
+          <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Color</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="products-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ADD PRODUCT ── -->
+    <div class="tab" id="tab-add-product">
+      <div class="topbar"><div class="page-title">ADD PRODUCT</div></div>
+      <div class="panel">
+        <div class="panel-title">NEW DROP DETAILS</div>
+        <div class="fg2" style="margin-bottom:12px">
+          <div class="fg"><label class="flbl">Product Name *</label><input class="finput" id="n-name" placeholder="e.g. Void Oversized Tee"></div>
+          <div class="fg"><label class="flbl">Price (₹) *</label><input class="finput" id="n-price" type="number" placeholder="1499"></div>
+        </div>
+        <div class="fg2" style="margin-bottom:12px">
+          <div class="fg"><label class="flbl">Category</label><select class="fsel" id="n-cat"><option value="tshirt">T-Shirt</option><option value="hoodie">Hoodie</option><option value="cap">Cap</option><option value="accessories">Accessories</option></select></div>
+          <div class="fg"><label class="flbl">Status</label><select class="fsel" id="n-status"><option value="new">New Arrival</option><option value="arriving">Arriving Soon</option><option value="available">Available</option><option value="soldout">Sold Out</option></select></div>
+        </div>
+        <div class="fg2" style="margin-bottom:12px">
+          <div class="fg"><label class="flbl">Shirt Color (Hex)</label><input class="finput" id="n-color" value="#E8FF3A" oninput="document.getElementById('n-color-prev').style.background=this.value"><div class="color-preview" id="n-color-prev" style="background:#E8FF3A"></div></div>
+          <div class="fg"><label class="flbl">Glow Color (Hex)</label><input class="finput" id="n-glow" value="#E8FF3A"></div>
+        </div>
+        <div class="fg2" style="margin-bottom:12px">
+          <div class="fg"><label class="flbl">Stock Quantity</label><input class="finput" id="n-stock" type="number" placeholder="100"></div>
+          <div></div>
+        </div>
+        <div class="fg" style="margin-bottom:12px"><label class="flbl">Description</label><textarea class="finput" id="n-desc" placeholder="Describe this drop..." style="min-height:80px;resize:vertical"></textarea></div>
+        <div class="fg" style="margin-bottom:0"><label class="flbl">Available Sizes</label>
+          <div class="cbrow">
+            <label class="cblbl"><input type="checkbox" name="nsz" value="XS"> XS</label>
+            <label class="cblbl"><input type="checkbox" name="nsz" value="S" checked> S</label>
+            <label class="cblbl"><input type="checkbox" name="nsz" value="M" checked> M</label>
+            <label class="cblbl"><input type="checkbox" name="nsz" value="L" checked> L</label>
+            <label class="cblbl"><input type="checkbox" name="nsz" value="XL" checked> XL</label>
+            <label class="cblbl"><input type="checkbox" name="nsz" value="XXL"> XXL</label>
+            <label class="cblbl"><input type="checkbox" name="nsz" value="One Size"> One Size</label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="bp" onclick="publishProduct()"><span>✦ PUBLISH DROP</span></button>
+          <button class="bo-btn" onclick="clearNewForm()">CLEAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ARRIVALS ── -->
+    <div class="tab" id="tab-arrivals">
+      <div class="topbar"><div class="page-title">ARRIVALS</div></div>
+      <div class="panel">
+        <div class="panel-title">MANAGE ARRIVAL STATUS</div>
+        <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:22px">Products set to "New Arrival" appear on homepage. Use this tab to quickly update what's featured.</p>
+        <table class="atable"><thead><tr><th>Product</th><th>Price</th><th>Current Status</th><th>Quick Change</th></tr></thead><tbody id="arrivals-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ── CUSTOMERS ── -->
+    <div class="tab" id="tab-customers">
+      <div class="topbar"><div class="page-title">CUSTOMERS</div></div>
+      <div class="panel">
+        <div class="panel-title">CUSTOMER RECORDS</div>
+        <p style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:18px;letter-spacing:1px">Customer data from store orders. In production, connect to your database.</p>
+        <table class="atable"><thead><tr><th>Name</th><th>Email</th><th>Orders</th><th>Total Spent</th><th>Last Order</th></tr></thead><tbody id="customers-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS ── -->
+    <div class="tab" id="tab-settings">
+      <div class="topbar"><div class="page-title">SETTINGS</div></div>
+      <div class="panel" style="max-width:560px">
+        <div class="panel-title">STORE SETTINGS</div>
+        <div class="fg"><label class="flbl">Store Name</label><input class="finput" value="Satori Station"></div>
+        <div class="fg"><label class="flbl">Contact Email</label><input class="finput" value="hello@satoristation.in"></div>
+        <div class="fg"><label class="flbl">Free Shipping Above (₹)</label><input class="finput" type="number" value="999"></div>
+        <div class="fg"><label class="flbl">COD Fee (₹)</label><input class="finput" type="number" value="50"></div>
+        <div class="fg"><label class="flbl">Instagram Handle</label><input class="finput" value="@satoristation"></div>
+        <div class="form-actions"><button class="bp" onclick="toast2('Settings saved!')"><span>SAVE SETTINGS</span></button></div>
+      </div>
+      <div class="panel" style="max-width:560px">
+        <div class="panel-title">ADMIN CREDENTIALS</div>
+        <div class="fg"><label class="flbl">Admin Email</label><input class="finput" id="new-admin-email" placeholder="admin@satoristation.in"></div>
+        <div class="fg"><label class="flbl">New Password</label><input class="finput" id="new-admin-pass" type="password" placeholder="Min 8 characters"></div>
+        <div class="fg"><label class="flbl">Confirm Password</label><input class="finput" id="new-admin-pass2" type="password" placeholder="Repeat password"></div>
+        <div class="form-actions"><button class="bp" onclick="changeAdminPass()"><span>UPDATE CREDENTIALS</span></button></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ══ ADMIN CREDENTIALS (In production, verify server-side) ══
+let ADMIN = { email:'admin@satoristation.in', pass:'admin123' };
+let isLoggedIn = false;
+let editingId = null;
+
+// ══ SAMPLE DATA ══
+let products = [
+  {id:1,name:'VOID OVERSIZED TEE',cat:'tshirt',price:1499,status:'new',color:'#E8FF3A',glow:'#E8FF3A',stock:45,desc:'The signature oversized drop.',sizes:['S','M','L','XL','XXL']},
+  {id:2,name:'SIGNAL HOODIE',cat:'hoodie',price:2999,status:'new',color:'#3AFFD4',glow:'#3AFFD4',stock:12,desc:'Garment-dyed ultra-soft fleece hoodie.',sizes:['M','L','XL']},
+  {id:3,name:'STATIC GRAPHIC TEE',cat:'tshirt',price:1299,status:'available',color:'#FF3A6E',glow:'#FF3A6E',stock:78,desc:'Screen-printed graphic tee.',sizes:['S','M','L','XL','XXL']},
+  {id:4,name:'FREQUENCY CAP',cat:'cap',price:799,status:'arriving',color:'#a78bfa',glow:'#a78bfa',stock:30,desc:'Six-panel structured cap.',sizes:['One Size']},
+  {id:5,name:'PHANTOM ACID WASH',cat:'tshirt',price:1699,status:'new',color:'#FFFFFF',glow:'#E8FF3A',stock:8,desc:'Hand acid-washed tee.',sizes:['S','M','L']},
+  {id:6,name:'AURA CROP HOODIE',cat:'hoodie',price:2499,status:'soldout',color:'#FF3A6E',glow:'#FF3A6E',stock:0,desc:'Boxy crop hoodie.',sizes:['XS','S','M']},
+];
+let orders = [
+  {id:'SS-4829371',date:'22 Feb 2025',customer:'Arjun Sharma',email:'arjun@mail.com',items:2,total:2798,payment:'UPI',status:'Confirmed',address:'Mumbai, MH'},
+  {id:'SS-3917264',date:'21 Feb 2025',customer:'Priya Mehta',email:'priya@mail.com',items:1,total:1499,payment:'Card',status:'Shipped',address:'Delhi, DL'},
+  {id:'SS-5482910',date:'20 Feb 2025',customer:'Riya Singh',email:'riya@mail.com',items:3,total:5497,payment:'UPI',status:'Delivered',address:'Bangalore, KA'},
+  {id:'SS-2847593',date:'19 Feb 2025',customer:'Karan Patel',email:'karan@mail.com',items:1,total:799,payment:'COD',status:'Confirmed',address:'Ahmedabad, GJ'},
+  {id:'SS-7391847',date:'18 Feb 2025',customer:'Ananya Nair',email:'ananya@mail.com',items:2,total:4498,payment:'NetBanking',status:'Delivered',address:'Chennai, TN'},
+];
+let nextId = 7;
+
+// ══ CURSOR ══
+const cur=document.getElementById('cur'), ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{ mx=e.clientX; my=e.clientY; cur.style.left=mx-5+'px'; cur.style.top=my-5+'px'; });
+(function ar(){ rx+=(mx-rx-20)*.14; ry+=(my-ry-20)*.14; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(ar); })();
+document.addEventListener('mousedown',()=>{ ring.style.transform='scale(1.5)'; });
+document.addEventListener('mouseup',()=>{ ring.style.transform='scale(1)'; });
+
+// ══ LOGIN ══
+function doAdminLogin(){
+  const email=document.getElementById('a-email').value.trim(), pass=document.getElementById('a-pass').value;
+  const err=document.getElementById('l-err');
+  if(!email||!pass){ err.textContent='Please fill in all fields'; err.classList.add('show'); return; }
+  if(email===ADMIN.email && pass===ADMIN.pass){
+    isLoggedIn=true;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('admin-shell').classList.add('active');
+    renderAll();
+    toast2('✦ Welcome to Admin Panel');
+  } else {
+    err.textContent='Invalid credentials. Try admin@satoristation.in / admin123'; err.classList.add('show');
+    document.getElementById('a-pass').value='';
+  }
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!isLoggedIn) doAdminLogin(); });
+function adminLogout(){ isLoggedIn=false; document.getElementById('admin-shell').classList.remove('active'); document.getElementById('login-screen').style.display='flex'; document.getElementById('a-pass').value=''; }
+
+// ══ TABS ══
+function goTab(tab, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.sbnav').forEach(n=>n.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAll();
+}
+
+// ══ RENDER ALL ══
+function renderAll(){
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  renderDash(); renderOrders(); renderProducts(); renderArrivals(); renderCustomers();
+  document.getElementById('orders-badge').textContent=orders.length;
+}
+
+function sp(s){ const m={new:'sp-new',arriving:'sp-arriving',available:'sp-available',soldout:'sp-soldout',Confirmed:'sp-confirmed',Shipped:'sp-shipped',Delivered:'sp-delivered'}; const l={new:'NEW',arriving:'ARRIVING',available:'AVAILABLE',soldout:'SOLD OUT',Confirmed:'CONFIRMED',Shipped:'SHIPPED',Delivered:'DELIVERED'}; return `<span class="sp ${m[s]||'sp-available'}">${l[s]||s}</span>`; }
+
+// ══ DASHBOARD ══
+function renderDash(){
+  const rev=orders.reduce((a,b)=>a+b.total,0);
+  document.getElementById('d-products').textContent=products.length;
+  document.getElementById('d-orders').textContent=orders.length;
+  document.getElementById('d-revenue').textContent='₹'+rev.toLocaleString();
+  document.getElementById('d-new').textContent=products.filter(p=>p.status==='new').length;
+
+  // Recent orders
+  const el=document.getElementById('dash-orders');
+  if(el) el.innerHTML=orders.slice(0,5).map(o=>`<tr><td><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent)">${o.id}</span></td><td style="font-size:12px">${o.customer}</td><td class="tprice" style="font-size:18px">₹${o.total.toLocaleString()}</td><td>${sp(o.status)}</td></tr>`).join('');
+
+  // Low stock
+  const ls=document.getElementById('low-stock');
+  if(ls){ const lows=products.filter(p=>p.stock<=15); ls.innerHTML=lows.length?lows.map(p=>`<tr><td class="tname">${p.name}</td><td class="tcat">${p.cat}</td><td><span style="color:${p.stock===0?'var(--accent2)':p.stock<10?'orange':'var(--accent)'};font-family:'Bebas Neue',sans-serif;font-size:20px">${p.stock}</span></td><td>${sp(p.status)}</td><td><button class="abtn" onclick="openEdit(${p.id})">RESTOCK</button></td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px">ALL STOCK LEVELS OK ✓</td></tr>`; }
+
+  // Chart
+  const ch=document.getElementById('week-chart');
+  if(ch){ const days=['M','T','W','T','F','S','S']; const vals=[3,7,2,9,5,12,8]; const max=Math.max(...vals); ch.innerHTML=days.map((d,i)=>`<div class="chart-bar-wrap"><div class="chart-bar" style="height:${(vals[i]/max)*70}px" title="${vals[i]} orders"></div><div class="chart-lbl">${d}</div></div>`).join(''); }
+}
+
+// ══ ORDERS ══
+let orderSearch='';
+function searchOrders(q){ orderSearch=q.toLowerCase(); renderOrders(); }
+function renderOrders(){
+  const el=document.getElementById('orders-tbody');
+  const s=document.getElementById('orders-summary-text');
+  if(!el) return;
+  const filt=orders.filter(o=>!orderSearch||(o.id.toLowerCase().includes(orderSearch)||o.customer.toLowerCase().includes(orderSearch)));
+  if(s) s.textContent=filt.length+' orders | Total: ₹'+filt.reduce((a,b)=>a+b.total,0).toLocaleString();
+  el.innerHTML=filt.length?filt.map(o=>`<tr>
+    <td><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent)">${o.id}</span></td>
+    <td style="font-size:11px;color:var(--muted)">${o.date}</td>
+    <td><div style="font-size:13px;font-weight:700">${o.customer}</div><div style="font-size:10px;color:var(--muted)">${o.email}</div></td>
+    <td style="font-family:'Space Mono',monospace;font-size:10px">${o.items} item(s)</td>
+    <td class="tprice" style="font-size:18px">₹${o.total.toLocaleString()}</td>
+    <td><span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase">${o.payment}</span></td>
+    <td><select class="order-status-sel" onchange="updateOrderStatus('${o.id}',this.value)">
+      <option ${o.status==='Confirmed'?'selected':''}>Confirmed</option>
+      <option ${o.status==='Shipped'?'selected':''}>Shipped</option>
+      <option ${o.status==='Delivered'?'selected':''}>Delivered</option>
+      <option ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
+    </select></td>
+    <td><div class="act-btns"><button class="abtn" onclick="viewOrder('${o.id}')">VIEW</button></div></td>
+  </tr>`).join(''):`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px">NO ORDERS FOUND</td></tr>`;
+}
+
+function updateOrderStatus(id,status){ const o=orders.find(x=>x.id===id); if(o){o.status=status; renderOrders(); renderDash(); toast2('Order status updated → '+status); } }
+function viewOrder(id){ const o=orders.find(x=>x.id===id); if(!o)return; toast2('Order '+o.id+' | '+o.customer+' | ₹'+o.total.toLocaleString()); }
+
+// ══ PRODUCTS ══
+let prodSearch='';
+function searchProducts(q){ prodSearch=q.toLowerCase(); renderProducts(); }
+function renderProducts(){
+  const el=document.getElementById('products-tbody');
+  if(!el) return;
+  const filt=products.filter(p=>!prodSearch||p.name.toLowerCase().includes(prodSearch)||p.cat.includes(prodSearch));
+  el.innerHTML=filt.map(p=>`<tr>
+    <td><div class="tname">${p.name}</div><div class="tcat">${p.cat}</div></td>
+    <td class="tcat">${p.cat}</td>
+    <td class="tprice" style="font-size:20px">₹${p.price.toLocaleString()}</td>
+    <td><span class="cswatch" style="background:${p.color}"></span></td>
+    <td><span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${p.stock===0?'var(--accent2)':p.stock<10?'orange':'var(--text)'}">${p.stock}</span></td>
+    <td>${sp(p.status)}</td>
+    <td><div class="act-btns"><button class="abtn" onclick="openEdit(${p.id})">EDIT</button><button class="abtn del" onclick="delProduct(${p.id})">DEL</button></div></td>
+  </tr>`).join('');
+}
+
+// ══ ADD / EDIT PRODUCT ══
+function publishProduct(){
+  const name=document.getElementById('n-name').value.trim();
+  const price=Number(document.getElementById('n-price').value);
+  if(!name||!price){ toast2('Name & price required','e'); return; }
+  const sizes=[...document.querySelectorAll('input[name="nsz"]:checked')].map(c=>c.value);
+  products.unshift({id:nextId++,name:name.toUpperCase(),cat:document.getElementById('n-cat').value,price,status:document.getElementById('n-status').value,color:document.getElementById('n-color').value||'#E8FF3A',glow:document.getElementById('n-glow').value||'#E8FF3A',stock:Number(document.getElementById('n-stock').value)||100,desc:document.getElementById('n-desc').value,sizes:sizes.length?sizes:['S','M','L']});
+  clearNewForm(); renderAll(); toast2('✦ DROP PUBLISHED!');
+  goTab('products', document.querySelector('.sbnav:nth-child(6)'));
+}
+function clearNewForm(){ ['n-name','n-price','n-desc','n-stock'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''}); document.getElementById('n-color').value='#E8FF3A'; document.getElementById('n-glow').value='#E8FF3A'; document.getElementById('n-color-prev').style.background='#E8FF3A'; document.querySelectorAll('input[name="nsz"]').forEach(c=>c.checked=false); }
+
+function openEdit(id){
+  editingId=id;
+  const p=products.find(x=>x.id===id); if(!p) return;
+  document.getElementById('em-title').textContent='EDIT PRODUCT';
+  document.getElementById('e-name').value=p.name;
+  document.getElementById('e-price').value=p.price;
+  document.getElementById('e-cat').value=p.cat;
+  document.getElementById('e-status').value=p.status;
+  document.getElementById('e-stock').value=p.stock||0;
+  document.getElementById('e-color').value=p.color;
+  document.getElementById('e-glow').value=p.glow||p.color;
+  document.getElementById('e-desc').value=p.desc||'';
+  document.getElementById('e-color-prev').style.background=p.color;
+  document.getElementById('save-btn-txt').textContent='SAVE CHANGES';
+  document.querySelectorAll('input[name="esz"]').forEach(c=>c.checked=p.sizes.includes(c.value));
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit(){ document.getElementById('edit-modal').classList.remove('open'); editingId=null; }
+function saveProduct(){
+  const p=products.find(x=>x.id===editingId); if(!p) return;
+  p.name=document.getElementById('e-name').value.trim().toUpperCase();
+  p.price=Number(document.getElementById('e-price').value);
+  p.cat=document.getElementById('e-cat').value;
+  p.status=document.getElementById('e-status').value;
+  p.stock=Number(document.getElementById('e-stock').value)||0;
+  p.color=document.getElementById('e-color').value;
+  p.glow=document.getElementById('e-glow').value||p.color;
+  p.desc=document.getElementById('e-desc').value;
+  const sizes=[...document.querySelectorAll('input[name="esz"]:checked')].map(c=>c.value);
+  p.sizes=sizes.length?sizes:p.sizes;
+  closeEdit(); renderAll(); toast2('Product updated!');
+}
+function delProduct(id){ if(!confirm('Delete this product?')) return; products=products.filter(p=>p.id!==id); renderAll(); toast2('Product removed.'); }
+
+// ══ ARRIVALS ══
+function renderArrivals(){
+  const el=document.getElementById('arrivals-tbody');
+  if(!el) return;
+  el.innerHTML=products.map(p=>`<tr>
+    <td><div class="tname">${p.name}</div><div class="tcat">${p.cat}</div></td>
+    <td class="tprice" style="font-size:18px">₹${p.price.toLocaleString()}</td>
+    <td>${sp(p.status)}</td>
+    <td><select class="order-status-sel" onchange="setPStatus(${p.id},this.value)">
+      <option value="new" ${p.status==='new'?'selected':''}>New Arrival</option>
+      <option value="arriving" ${p.status==='arriving'?'selected':''}>Arriving Soon</option>
+      <option value="available" ${p.status==='available'?'selected':''}>Available</option>
+      <option value="soldout" ${p.status==='soldout'?'selected':''}>Sold Out</option>
+    </select></td>
+  </tr>`).join('');
+}
+function setPStatus(id,s){ const p=products.find(x=>x.id===id); if(p){p.status=s; renderArrivals(); renderDash(); toast2('Status → '+s.toUpperCase()); } }
+
+// ══ CUSTOMERS ══
+function renderCustomers(){
+  const el=document.getElementById('customers-tbody');
+  if(!el) return;
+  // Derive customers from orders
+  const cmap={};
+  orders.forEach(o=>{ if(!cmap[o.email]) cmap[o.email]={name:o.customer,email:o.email,orders:0,spent:0,last:o.date}; cmap[o.email].orders++; cmap[o.email].spent+=o.total; cmap[o.email].last=o.date; });
+  const custs=Object.values(cmap);
+  el.innerHTML=custs.length?custs.map(c=>`<tr>
+    <td style="font-weight:700">${c.name}</td>
+    <td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">${c.email}</td>
+    <td style="font-family:'Bebas Neue',sans-serif;font-size:20px">${c.orders}</td>
+    <td class="tprice" style="font-size:18px">₹${c.spent.toLocaleString()}</td>
+    <td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">${c.last}</td>
+  </tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px">NO CUSTOMERS YET</td></tr>`;
+}
+
+// ══ SETTINGS ══
+function changeAdminPass(){
+  const e=document.getElementById('new-admin-email').value.trim();
+  const p=document.getElementById('new-admin-pass').value;
+  const p2=document.getElementById('new-admin-pass2').value;
+  if(!e||!p){ toast2('Fill all fields','e'); return; }
+  if(p!==p2){ toast2('Passwords do not match','e'); return; }
+  if(p.length<8){ toast2('Password must be 8+ characters','e'); return; }
+  ADMIN.email=e; ADMIN.pass=p;
+  document.getElementById('new-admin-pass').value=''; document.getElementById('new-admin-pass2').value='';
+  toast2('Admin credentials updated!');
+}
+
+// ══ TOAST ══
+function toast2(msg,type=''){
+  const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(type==='e'?' err':'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',2800);
+}
+
+// ══ KEYDOWN ══
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeEdit(); });
+</script>
+</body>
+</html>
